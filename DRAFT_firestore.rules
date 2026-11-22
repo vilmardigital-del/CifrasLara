@@ -1,0 +1,295 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function userProfileExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function setlistDocExists(userId, setlistId) {
+      return exists(/databases/$(database)/documents/users/$(userId)/setlists/$(setlistId));
+    }
+
+    function songDocExists(userId, songId) {
+      return exists(/databases/$(database)/documents/users/$(userId)/songs/$(songId));
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+        'userId', 'displayName', 'preferredInstrument', 'stageDarkMode',
+        'hasSeededLibrary', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'userId', 'displayName', 'preferredInstrument', 'stageDarkMode',
+        'hasSeededLibrary', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == userId && isValidId(data.userId) &&
+      data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+      data.preferredInstrument is string && data.preferredInstrument in ['Violão', 'Guitarra', 'Ukulele', 'Teclado'] &&
+      data.stageDarkMode is bool &&
+      data.hasSeededLibrary is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSong(data, userId) {
+      return data.keys().hasAll([
+        'userId', 'title', 'artist', 'genre', 'originalKey', 'transposeOffset',
+        'capo', 'bpm', 'timeSignature', 'difficulty', 'isFavorite',
+        'content', 'notes', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'userId', 'title', 'artist', 'genre', 'originalKey', 'transposeOffset',
+        'capo', 'bpm', 'timeSignature', 'difficulty', 'isFavorite',
+        'content', 'notes', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == userId && isValidId(data.userId) &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+      data.artist is string && data.artist.size() >= 1 && data.artist.size() <= 120 &&
+      data.genre is string && data.genre.size() >= 1 && data.genre.size() <= 60 &&
+      data.originalKey is string && data.originalKey.size() >= 1 && data.originalKey.size() <= 10 &&
+      data.transposeOffset is int && data.transposeOffset >= -11 && data.transposeOffset <= 11 &&
+      data.capo is int && data.capo >= 0 && data.capo <= 11 &&
+      data.bpm is int && data.bpm >= 40 && data.bpm <= 240 &&
+      data.timeSignature is string && data.timeSignature.size() >= 1 && data.timeSignature.size() <= 10 &&
+      data.difficulty is string && data.difficulty in ['Iniciante', 'Intermediário', 'Avançado'] &&
+      data.isFavorite is bool &&
+      data.content is string && data.content.size() >= 1 && data.content.size() <= 30000 &&
+      data.notes is string && data.notes.size() <= 1000 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSetlist(data, userId) {
+      return data.keys().hasAll([
+        'userId', 'name', 'venue', 'eventDate', 'description', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'userId', 'name', 'venue', 'eventDate', 'description', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == userId && isValidId(data.userId) &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+      data.venue is string && data.venue.size() <= 120 &&
+      data.eventDate is string && data.eventDate.size() <= 32 &&
+      data.description is string && data.description.size() <= 500 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSetlistItem(data, userId, setlistId) {
+      return data.keys().hasAll([
+        'userId', 'setlistId', 'songId', 'order', 'customTranspose', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'userId', 'setlistId', 'songId', 'order', 'customTranspose', 'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId == userId && isValidId(data.userId) &&
+      data.setlistId is string && data.setlistId == setlistId && isValidId(data.setlistId) &&
+      data.songId is string && isValidId(data.songId) &&
+      data.order is int && data.order >= 0 && data.order <= 500 &&
+      data.customTranspose is int && data.customTranspose >= -11 && data.customTranspose <= 11 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidVoiceLog(data, userId) {
+      return data.keys().hasAll([
+        'userId', 'transcript', 'intent', 'responseSummary', 'createdAt'
+      ]) && data.keys().hasOnly([
+        'userId', 'transcript', 'intent', 'responseSummary', 'createdAt'
+      ]) &&
+      data.userId is string && data.userId == userId && isValidId(data.userId) &&
+      data.transcript is string && data.transcript.size() >= 1 && data.transcript.size() <= 300 &&
+      data.intent is string && data.intent.size() >= 1 && data.intent.size() <= 60 &&
+      data.responseSummary is string && data.responseSummary.size() >= 1 && data.responseSummary.size() <= 400 &&
+      data.createdAt is timestamp;
+    }
+
+    // Collection Rules
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && request.auth.uid == userId
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && request.auth.uid == userId
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'preferredInstrument', 'stageDarkMode', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['hasSeededLibrary', 'updatedAt'])
+        );
+
+      allow delete: if isVerifiedUser()
+        && request.auth.uid == userId
+        && isValidId(userId);
+
+      // Songs (Cifras)
+      match /songs/{songId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(songId) && userProfileExists(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(songId)
+          && isValidSong(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userProfileExists(userId);
+
+        allow update: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(songId)
+          && isValidSong(incoming(), userId)
+          && userProfileExists(userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            // Action: Edit Song Content & Metadata
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'artist', 'genre', 'originalKey', 'transposeOffset',
+              'capo', 'bpm', 'timeSignature', 'difficulty', 'isFavorite',
+              'content', 'notes', 'updatedAt'
+            ]) ||
+            // Action: Quick Stage Controls (Transpose / Capo / BPM / Favorite)
+            incoming().diff(existing()).affectedKeys().hasOnly(['transposeOffset', 'capo', 'bpm', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['isFavorite', 'updatedAt'])
+          );
+
+        allow delete: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(songId);
+      }
+
+      // Setlists (Repertórios)
+      match /setlists/{setlistId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(setlistId) && userProfileExists(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(setlistId)
+          && isValidSetlist(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userProfileExists(userId);
+
+        allow update: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(setlistId)
+          && isValidSetlist(incoming(), userId)
+          && userProfileExists(userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'venue', 'eventDate', 'description', 'updatedAt'
+          ]);
+
+        allow delete: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(setlistId);
+
+        // Ordered Song Items inside Setlist
+        match /items/{itemId} {
+          allow get: if isOwner(userId) && isValidId(userId) && isValidId(setlistId) && isValidId(itemId) && setlistDocExists(userId, setlistId);
+          allow list: if isOwner(userId) && resource.data.userId == request.auth.uid && resource.data.setlistId == setlistId;
+
+          allow create: if isVerifiedUser()
+            && request.auth.uid == userId
+            && isValidId(userId)
+            && isValidId(setlistId)
+            && isValidId(itemId)
+            && isValidSetlistItem(incoming(), userId, setlistId)
+            && incoming().createdAt == request.time
+            && incoming().updatedAt == request.time
+            && setlistDocExists(userId, setlistId)
+            && songDocExists(userId, incoming().songId);
+
+          allow update: if isVerifiedUser()
+            && request.auth.uid == userId
+            && isValidId(userId)
+            && isValidId(setlistId)
+            && isValidId(itemId)
+            && isValidSetlistItem(incoming(), userId, setlistId)
+            && setlistDocExists(userId, setlistId)
+            && songDocExists(userId, incoming().songId)
+            && incoming().userId == existing().userId
+            && incoming().setlistId == existing().setlistId
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['order', 'customTranspose', 'updatedAt']);
+
+          allow delete: if isVerifiedUser()
+            && request.auth.uid == userId
+            && isValidId(userId)
+            && isValidId(setlistId)
+            && isValidId(itemId);
+        }
+      }
+
+      // Voice Assistant Command Logs
+      match /voiceLogs/{logId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(logId) && userProfileExists(userId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(logId)
+          && isValidVoiceLog(incoming(), userId)
+          && incoming().createdAt == request.time
+          && userProfileExists(userId);
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(logId);
+      }
+    }
+  }
+}

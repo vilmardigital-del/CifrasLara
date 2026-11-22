@@ -1,0 +1,6 @@
+{
+  "name": "SmartCifra",
+  "description": "Organize suas cifras, transponha tons, monte repertórios e controle seu palco por voz com armazenamento em tempo real no Firebase.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

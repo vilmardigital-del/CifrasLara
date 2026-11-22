@@ -1,0 +1,281 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Musician profile and studio preferences for SmartCifra",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Musician display name"
+        },
+        "preferredInstrument": {
+          "type": "string",
+          "enum": ["Violão", "Guitarra", "Ukulele", "Teclado"],
+          "description": "Default instrument for chord diagrams"
+        },
+        "stageDarkMode": {
+          "type": "boolean",
+          "description": "Whether high-contrast stage dark mode is enabled in the chord reader"
+        },
+        "hasSeededLibrary": {
+          "type": "boolean",
+          "description": "Whether starter cifras and setlist were seeded for this account"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["userId", "displayName", "preferredInstrument", "stageDarkMode", "hasSeededLibrary", "createdAt", "updatedAt"]
+    },
+    "Song": {
+      "title": "Song",
+      "description": "Chord sheet (cifra) stored in the musician's library",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140,
+          "description": "Song title"
+        },
+        "artist": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Artist or composer name"
+        },
+        "genre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Musical genre or category"
+        },
+        "originalKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10,
+          "description": "Base musical key (e.g. G, Am, F#m)"
+        },
+        "transposeOffset": {
+          "type": "integer",
+          "description": "Saved semitone transposition offset (-11 to 11)"
+        },
+        "capo": {
+          "type": "integer",
+          "description": "Capo fret position (0 to 11)"
+        },
+        "bpm": {
+          "type": "integer",
+          "description": "Tempo in beats per minute (40 to 240)"
+        },
+        "timeSignature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10,
+          "description": "Time signature (e.g. 4/4, 3/4, 6/8)"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["Iniciante", "Intermediário", "Avançado"],
+          "description": "Playing difficulty level"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Whether the song is starred as favorite"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30000,
+          "description": "ChordPro / inline bracketed chord sheet content"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Performance or arrangement notes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["userId", "title", "artist", "genre", "originalKey", "transposeOffset", "capo", "bpm", "timeSignature", "difficulty", "isFavorite", "content", "notes", "createdAt", "updatedAt"]
+    },
+    "Setlist": {
+      "title": "Setlist",
+      "description": "Organized performance repertoire or gig setlist",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Setlist title"
+        },
+        "venue": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Venue, church, or event name"
+        },
+        "eventDate": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Optional date label for the performance"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Setlist notes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["userId", "name", "venue", "eventDate", "description", "createdAt", "updatedAt"]
+    },
+    "SetlistItem": {
+      "title": "SetlistItem",
+      "description": "Ordered song entry inside a setlist",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID"
+        },
+        "setlistId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Parent setlist document ID"
+        },
+        "songId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Referenced song document ID"
+        },
+        "order": {
+          "type": "integer",
+          "description": "0-based position in the setlist"
+        },
+        "customTranspose": {
+          "type": "integer",
+          "description": "Optional setlist-specific transposition offset"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["userId", "setlistId", "songId", "order", "customTranspose", "createdAt", "updatedAt"]
+    },
+    "VoiceLog": {
+      "title": "VoiceLog",
+      "description": "Saved voice assistant interaction history entry",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Owner Firebase Auth UID"
+        },
+        "transcript": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Recognized user command or query"
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Resolved assistant action intent"
+        },
+        "responseSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400,
+          "description": "Assistant response summary"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        }
+      },
+      "required": ["userId", "transcript", "intent", "responseSummary", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Owner-only musician profile and instrument preferences"
+    },
+    "/users/{userId}/songs/{songId}": {
+      "schema": { "$ref": "#/entities/Song" },
+      "description": "Musician's saved chord sheets (cifras)"
+    },
+    "/users/{userId}/setlists/{setlistId}": {
+      "schema": { "$ref": "#/entities/Setlist" },
+      "description": "Musician's organized setlists / repertórios"
+    },
+    "/users/{userId}/setlists/{setlistId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/SetlistItem" },
+      "description": "Ordered song items inside a setlist"
+    },
+    "/users/{userId}/voiceLogs/{logId}": {
+      "schema": { "$ref": "#/entities/VoiceLog" },
+      "description": "Recent voice assistant command logs"
+    }
+  }
+}
